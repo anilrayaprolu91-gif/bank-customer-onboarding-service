@@ -1,0 +1,39 @@
+meta {
+  name: 06 Create Account
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/v1/customers/{{customerId}}/accounts
+  body: json
+}
+
+script:pre-request {
+  const suffix = Date.now().toString();
+  bru.setEnvVar("productCode", `SAV-${suffix.slice(-6)}`);
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "accountType": "SAVINGS",
+    "currency": "USD",
+    "initialDeposit": 5000.0,
+    "productCode": "{{productCode}}"
+  }
+}
+
+script:post-response {
+  const raw = typeof res.getBody === "function" ? res.getBody() : res.body;
+  const body = typeof raw === "string" ? JSON.parse(raw) : raw;
+
+  if (body?.data?.id) {
+    bru.setEnvVar("accountId", body.data.id);
+  }
+}
+

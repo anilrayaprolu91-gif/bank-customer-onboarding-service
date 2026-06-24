@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["success", "message", "data", "timestamp"],
+  "properties": {
+    "success": { "type": "boolean" },
+    "message": { "type": "string" },
+    "timestamp": { "type": ["string", "null"] },
+    "data": {
+      "type": "object",
+      "required": ["id", "customerNumber", "email", "customerStatus", "addresses", "kycDocuments", "riskProfile", "accounts"],
+      "properties": {
+        "id": { "type": "string" },
+        "customerNumber": { "type": "string" },
+        "email": { "type": "string" },
+        "customerStatus": { "type": "string" },
+        "addresses": { "type": "array", "minItems": 1 },
+        "kycDocuments": { "type": "array", "minItems": 1 },
+        "riskProfile": { "type": "object" },
+        "accounts": { "type": "array" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
+

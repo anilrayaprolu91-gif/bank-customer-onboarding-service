@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["country", "riskLevel", "riskScore"],
+  "properties": {
+    "country": { "type": "string" },
+    "riskLevel": { "type": "string" },
+    "riskScore": { "type": "integer" }
+  },
+  "additionalProperties": true
+}
+

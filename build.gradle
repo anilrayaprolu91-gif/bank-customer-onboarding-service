@@ -1,0 +1,348 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.5'
+    id 'io.spring.dependency-management' version '1.1.6'
+    id 'org.springframework.cloud.contract' version '4.1.5'
+    id 'maven-publish'
+    id 'jacoco'
+    id 'com.github.spotbugs' version '6.1.0'
+    id 'org.sonarqube' version '5.1.0.4882'
+}
+
+group = 'com.bank'
+version = '1.0.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    mapstructVersion      = '1.6.2'
+    springdocVersion      = '2.6.0'
+    springCloudContractVersion = '4.1.5'
+    pactVersion           = '4.6.17'
+    restAssuredVersion    = '5.5.1'
+    allureVersion         = '2.29.0'
+    wiremockVersion       = '3.10.0'
+    testcontainersVersion = '1.20.3'
+}
+
+sourceSets {
+    componentTest {
+        java.srcDir 'src/componentTest/java'
+        resources.srcDir 'src/componentTest/resources'
+        compileClasspath += sourceSets.main.output + sourceSets.test.output + configurations.testRuntimeClasspath
+        runtimeClasspath += output + compileClasspath
+    }
+
+    blackboxTest {
+        java.srcDir 'src/apiTest/java'
+        resources.srcDir 'src/apiTest/resources'
+        compileClasspath += sourceSets.main.output + sourceSets.test.output + configurations.testRuntimeClasspath
+        runtimeClasspath += output + compileClasspath
+    }
+
+    consumerContractTest {
+        java.srcDir 'src/consumerContractTest/java'
+        resources.srcDir 'src/consumerContractTest/resources'
+        compileClasspath += sourceSets.main.output + sourceSets.test.output + configurations.testRuntimeClasspath
+        runtimeClasspath += output + compileClasspath
+    }
+}
+
+configurations {
+    componentTestImplementation.extendsFrom testImplementation
+    componentTestRuntimeOnly.extendsFrom testRuntimeOnly
+    componentTestCompileOnly.extendsFrom testCompileOnly
+    componentTestAnnotationProcessor.extendsFrom testAnnotationProcessor
+
+    blackboxTestImplementation.extendsFrom testImplementation
+    blackboxTestRuntimeOnly.extendsFrom testRuntimeOnly
+    blackboxTestCompileOnly.extendsFrom testCompileOnly
+    blackboxTestAnnotationProcessor.extendsFrom testAnnotationProcessor
+
+    consumerContractTestImplementation.extendsFrom testImplementation
+    consumerContractTestRuntimeOnly.extendsFrom testRuntimeOnly
+    consumerContractTestCompileOnly.extendsFrom testCompileOnly
+    consumerContractTestAnnotationProcessor.extendsFrom testAnnotationProcessor
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.testcontainers:testcontainers-bom:${testcontainersVersion}"
+    }
+}
+
+dependencies {
+    // ── Spring Boot Starters ──────────────────────────────────────────────────
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.kafka:spring-kafka'
+
+    // ── Database ──────────────────────────────────────────────────────────────
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+    runtimeOnly    'org.postgresql:postgresql'
+
+    // ── OpenAPI / Swagger ─────────────────────────────────────────────────────
+    implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springdocVersion}"
+    implementation 'org.apache.commons:commons-lang3:3.18.0'
+
+    // ── MapStruct ─────────────────────────────────────────────────────────────
+    implementation         "org.mapstruct:mapstruct:${mapstructVersion}"
+    annotationProcessor    "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+
+    // ── Lombok ────────────────────────────────────────────────────────────────
+    compileOnly         'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+
+    // ── Testing ───────────────────────────────────────────────────────────────
+    testImplementation  'org.springframework.boot:spring-boot-starter-test'
+    testImplementation  'org.springframework.kafka:spring-kafka-test'
+    testImplementation  "org.springframework.cloud:spring-cloud-starter-contract-verifier:${springCloudContractVersion}"
+    testImplementation  "au.com.dius.pact.consumer:junit5:${pactVersion}"
+    testRuntimeOnly      'com.h2database:h2'
+    testRuntimeOnly     'org.junit.platform:junit-platform-launcher'
+
+    testCompileOnly         'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    testAnnotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+
+    // ── Component Testing Layer ────────────────────────────────────────────────
+    componentTestImplementation sourceSets.main.output
+    componentTestImplementation 'org.junit.jupiter:junit-jupiter-api'
+    componentTestImplementation 'org.testcontainers:junit-jupiter'
+    componentTestImplementation 'org.testcontainers:kafka'
+    componentTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+
+    // ── Blackbox/API Automation Layer ──────────────────────────────────────────
+    blackboxTestImplementation sourceSets.main.output
+    blackboxTestImplementation 'org.junit.jupiter:junit-jupiter-api'
+    blackboxTestImplementation "io.rest-assured:rest-assured:${restAssuredVersion}"
+    blackboxTestImplementation "io.rest-assured:json-schema-validator:${restAssuredVersion}"
+    blackboxTestImplementation 'com.fasterxml.jackson.core:jackson-databind'
+    blackboxTestImplementation 'org.assertj:assertj-core'
+    blackboxTestImplementation "io.qameta.allure:allure-junit5:${allureVersion}"
+    blackboxTestImplementation "io.qameta.allure:allure-rest-assured:${allureVersion}"
+    blackboxTestImplementation "org.wiremock:wiremock-standalone:${wiremockVersion}"
+    blackboxTestImplementation 'org.testcontainers:junit-jupiter'
+    blackboxTestImplementation 'org.testcontainers:kafka'
+    blackboxTestImplementation 'org.testcontainers:postgresql'
+    blackboxTestImplementation 'org.testcontainers:testcontainers'
+    blackboxTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+
+    // ── Consumer Contract Testing Layer (Pact) ─────────────────────────────────
+    consumerContractTestImplementation sourceSets.main.output
+    consumerContractTestImplementation 'org.junit.jupiter:junit-jupiter-api'
+    consumerContractTestImplementation "au.com.dius.pact.consumer:junit5:${pactVersion}"
+    consumerContractTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+}
+
+contracts {
+    testFramework = 'JUNIT5'
+    testMode = 'MOCKMVC'
+    baseClassForTests = 'com.bank.onboarding.contract.BaseContractTest'
+    contractsDslDir = file("${projectDir}/src/test/resources/contracts")
+    failOnNoContracts = false
+}
+
+
+tasks.named('test') {
+    description = 'Runs fast unit tests.'
+    useJUnitPlatform()
+    systemProperty 'spring.profiles.active', 'test'
+    jvmArgs '-XX:+EnableDynamicAgentLoading'
+    reports {
+        html.required = true
+        junitXml.required = true
+        html.outputLocation = layout.buildDirectory.dir('reports/tests/test')
+        junitXml.outputLocation = layout.buildDirectory.dir('test-results/test')
+    }
+}
+
+jacoco {
+    toolVersion = '0.8.12'
+}
+
+tasks.named('jacocoTestReport') {
+    dependsOn tasks.named('test')
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+}
+
+spotbugs {
+    effort = com.github.spotbugs.snom.Effort.MAX
+}
+
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask).configureEach {
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+sonar {
+    properties {
+        property 'sonar.projectKey', 'bank-customer-onboarding-service'
+        property 'sonar.projectName', 'Bank Customer Onboarding Service'
+        property 'sonar.sources', 'src/main/java'
+        property 'sonar.tests', 'src/test/java,src/componentTest/java,src/apiTest/java'
+        property 'sonar.java.binaries', 'build/classes/java/main'
+        property 'sonar.junit.reportPaths', 'build/test-results/test,build/test-results/componentTest,build/test-results/blackboxTest'
+        property 'sonar.coverage.jacoco.xmlReportPaths', 'build/reports/jacoco/test/jacocoTestReport.xml'
+    }
+}
+
+tasks.named('compileJava') {
+    options.compilerArgs += [
+        '-Amapstruct.defaultComponentModel=spring',
+        '-Amapstruct.suppressGeneratorTimestamp=true',
+        '-Amapstruct.verbose=false'
+    ]
+}
+
+tasks.register('componentTest', Test) {
+    description = 'Runs component tests against Spring context boundaries.'
+    group = 'verification'
+    testClassesDirs = sourceSets.componentTest.output.classesDirs
+    classpath = sourceSets.componentTest.runtimeClasspath
+    shouldRunAfter tasks.named('test')
+    useJUnitPlatform()
+    systemProperty 'spring.profiles.active', 'test'
+    jvmArgs '-XX:+EnableDynamicAgentLoading'
+    reports {
+        html.required = true
+        junitXml.required = true
+        html.outputLocation = layout.buildDirectory.dir('reports/tests/componentTest')
+        junitXml.outputLocation = layout.buildDirectory.dir('test-results/componentTest')
+    }
+}
+
+tasks.register('blackboxTest', Test) {
+    description = 'Runs blackbox API automation using Rest Assured and externalized environments.'
+    group = 'verification'
+    testClassesDirs = sourceSets.blackboxTest.output.classesDirs
+    classpath = sourceSets.blackboxTest.runtimeClasspath
+    shouldRunAfter tasks.named('componentTest')
+    useJUnitPlatform()
+    systemProperty 'api.profile', System.getProperty('api.profile', 'embedded')
+    environment 'DOCKER_HOST', System.getenv('DOCKER_HOST') ?: 'npipe:////./pipe/docker_engine'
+    jvmArgs '-XX:+EnableDynamicAgentLoading'
+    reports {
+        html.required = true
+        junitXml.required = true
+        html.outputLocation = layout.buildDirectory.dir('reports/tests/blackboxTest')
+        junitXml.outputLocation = layout.buildDirectory.dir('test-results/blackboxTest')
+    }
+}
+
+tasks.register('apiTest') {
+    description = 'Compatibility alias for blackboxTest.'
+    group = 'verification'
+    dependsOn tasks.named('blackboxTest')
+}
+
+tasks.register('consumerContractTest', Test) {
+    description = 'Runs consumer-driven contract tests using Pact against a mock provider.'
+    group = 'verification'
+    testClassesDirs = sourceSets.consumerContractTest.output.classesDirs
+    classpath = sourceSets.consumerContractTest.runtimeClasspath
+    shouldRunAfter tasks.named('test')
+    useJUnitPlatform()
+    // Keep generated pact files under build for easy CI archiving and artifact promotion.
+    systemProperty 'pact.rootDir', layout.buildDirectory.dir('pacts').get().asFile.absolutePath
+    reports {
+        html.required = true
+        junitXml.required = true
+        html.outputLocation = layout.buildDirectory.dir('reports/tests/consumerContractTest')
+        junitXml.outputLocation = layout.buildDirectory.dir('test-results/consumerContractTest')
+    }
+}
+
+// Accept credentials from either system properties or environment variables
+// so both local ./gradlew runs and Jenkins withCredentials blocks work.
+def resolvedStubsRepoUrl      = System.getProperty('STUBS_REPO_URL')      ?: System.getenv('STUBS_REPO_URL')      ?: ''
+def resolvedStubsRepoUsername = System.getProperty('STUBS_REPO_USERNAME') ?: System.getenv('STUBS_REPO_USERNAME') ?: ''
+def resolvedStubsRepoPassword = System.getProperty('STUBS_REPO_PASSWORD') ?: System.getenv('STUBS_REPO_PASSWORD') ?: ''
+
+publishing {
+    publications {
+        contractStubs(MavenPublication) {
+            artifactId = "${project.name}-stubs"
+            version = project.version
+            artifact tasks.named('verifierStubsJar')
+        }
+    }
+    repositories {
+        mavenLocal()
+        if (resolvedStubsRepoUrl) {
+            maven {
+                name = 'contractStubs'
+                url = uri(resolvedStubsRepoUrl)
+                credentials {
+                    username = resolvedStubsRepoUsername
+                    password = resolvedStubsRepoPassword
+                }
+            }
+        }
+    }
+}
+
+tasks.register('publishContractStubs') {
+    description = 'Builds and publishes the contract stubs artifact to the local Maven repository.'
+    group = 'verification'
+    dependsOn tasks.named('verifierStubsJar'), tasks.named('publishContractStubsPublicationToMavenLocal')
+}
+
+// Only register the remote publish task when a target repository URL is available at configuration time.
+// In CI, pass: ./gradlew publishContractStubsToRepository -DSTUBS_REPO_URL=https://...
+if (resolvedStubsRepoUrl) {
+    tasks.register('publishContractStubsToRepository') {
+        description = 'Publishes contract stubs to the configured Maven repository (STUBS_REPO_URL).'
+        group = 'verification'
+        dependsOn tasks.named('verifierStubsJar'), tasks.named('publishContractStubsPublicationToContractStubsRepository')
+    }
+}
+
+tasks.named('processComponentTestResources') {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.named('processBlackboxTestResources') {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('componentTest')
+    dependsOn tasks.named('blackboxTest')
+    dependsOn tasks.named('consumerContractTest')
+}
+
+tasks.register('testLayersReport', TestReport) {
+    description = 'Generates an aggregate report for unit, component, and blackbox test layers.'
+    destinationDirectory = layout.buildDirectory.dir('reports/tests/layers').get().asFile
+    testResults.from(
+            tasks.named('test').map { it.binaryResultsDirectory.get().asFile },
+            tasks.named('componentTest').map { it.binaryResultsDirectory.get().asFile },
+            tasks.named('blackboxTest').map { it.binaryResultsDirectory.get().asFile }
+    )
+}
+

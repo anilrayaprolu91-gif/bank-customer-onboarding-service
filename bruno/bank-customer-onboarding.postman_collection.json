@@ -1,0 +1,348 @@
+{
+  "info": {
+    "_postman_id": "e3a5bb58-3d2c-4dfc-b3fd-f3c6838ea001",
+    "name": "Bank Customer Onboarding Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "customerId",
+      "value": ""
+    },
+    {
+      "key": "customerNumber",
+      "value": ""
+    },
+    {
+      "key": "accountId",
+      "value": ""
+    },
+    {
+      "key": "email",
+      "value": ""
+    },
+    {
+      "key": "taxIdentificationNumber",
+      "value": ""
+    },
+    {
+      "key": "documentNumber",
+      "value": ""
+    },
+    {
+      "key": "productCode",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Customer Onboarding",
+      "item": [
+        {
+          "name": "01 Onboard Customer",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const suffix = Date.now().toString();",
+                  "bru.setEnvVar('email', `jane.smith.${suffix}@example.com`);",
+                  "bru.setEnvVar('taxIdentificationNumber', `987-65-${suffix.slice(-4)}`);",
+                  "bru.setEnvVar('documentNumber', `P${suffix.slice(-8)}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const raw = typeof res.getBody === 'function' ? res.getBody() : res.body;",
+                  "const json = typeof raw === 'string' ? JSON.parse(raw) : raw;",
+                  "if (json?.data?.id) bru.setEnvVar('customerId', json.data.id);",
+                  "if (json?.data?.customerNumber) bru.setEnvVar('customerNumber', json.data.customerNumber);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"personalInfo\": {\n    \"firstName\": \"Jane\",\n    \"lastName\": \"Smith\",\n    \"dateOfBirth\": \"1992-04-18\",\n    \"nationality\": \"US\",\n    \"taxIdentificationNumber\": \"{{taxIdentificationNumber}}\",\n    \"email\": \"{{email}}\",\n    \"phoneNumber\": \"+15551234567\"\n  },\n  \"addresses\": [\n    {\n      \"addressType\": \"HOME\",\n      \"street\": \"789 Elm Street\",\n      \"city\": \"Chicago\",\n      \"state\": \"IL\",\n      \"postalCode\": \"60601\",\n      \"country\": \"US\",\n      \"isPrimary\": true\n    }\n  ],\n  \"kycDocuments\": [\n    {\n      \"documentType\": \"PASSPORT\",\n      \"documentNumber\": \"{{documentNumber}}\",\n      \"issuingAuthority\": \"U.S. Department of State\",\n      \"issuingCountry\": \"US\",\n      \"issueDate\": \"2018-01-15\",\n      \"expiryDate\": \"2028-01-15\"\n    }\n  ],\n  \"riskProfile\": {\n    \"riskLevel\": \"LOW\",\n    \"riskScore\": 20,\n    \"assessedBy\": \"AUTO_SCREENING_v2.1\",\n    \"factors\": [\n      {\n        \"factorName\": \"GEOGRAPHIC_RISK\",\n        \"factorDescription\": \"Standard-risk jurisdiction\",\n        \"weight\": 0.1\n      }\n    ]\n  },\n  \"initialAccount\": {\n    \"accountType\": \"CHECKING\",\n    \"currency\": \"USD\",\n    \"initialDeposit\": 1000.0,\n    \"productCode\": \"CHK-STANDARD\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers/onboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers",
+                "onboard"
+              ]
+            }
+          }
+        },
+        {
+          "name": "02 Get Customer By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers",
+                "{{customerId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "03 Get Customer By Number",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers/number/{{customerNumber}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers",
+                "number",
+                "{{customerNumber}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "04 Update Customer Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIVE\",\n  \"reason\": \"All KYC documents verified successfully\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers",
+                "{{customerId}}",
+                "status"
+              ]
+            }
+          }
+        },
+        {
+          "name": "05 Get Onboarding Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}/onboarding-status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers",
+                "{{customerId}}",
+                "onboarding-status"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Account Management",
+      "item": [
+        {
+          "name": "06 Create Account",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const suffix = Date.now().toString();",
+                  "bru.setEnvVar('productCode', `SAV-${suffix.slice(-6)}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const raw = typeof res.getBody === 'function' ? res.getBody() : res.body;",
+                  "const json = typeof raw === 'string' ? JSON.parse(raw) : raw;",
+                  "if (json?.data?.id) bru.setEnvVar('accountId', json.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountType\": \"SAVINGS\",\n  \"currency\": \"USD\",\n  \"initialDeposit\": 5000.0,\n  \"productCode\": \"{{productCode}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}/accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers",
+                "{{customerId}}",
+                "accounts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "07 Get Accounts For Customer",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/customers/{{customerId}}/accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "customers",
+                "{{customerId}}",
+                "accounts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "08 Get Account By Id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/accounts/{{accountId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "accounts",
+                "{{accountId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "09 Close Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/accounts/{{accountId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "accounts",
+                "{{accountId}}"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+

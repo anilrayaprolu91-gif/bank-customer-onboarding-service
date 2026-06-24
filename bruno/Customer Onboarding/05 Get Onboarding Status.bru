@@ -1,0 +1,14 @@
+meta {
+  name: 05 Get Onboarding Status
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/v1/customers/{{customerId}}/onboarding-status
+}
+
+headers {
+  Accept: application/json
+}
+

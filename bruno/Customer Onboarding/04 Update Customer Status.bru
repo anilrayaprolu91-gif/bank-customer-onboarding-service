@@ -1,0 +1,23 @@
+meta {
+  name: 04 Update Customer Status
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/customers/{{customerId}}/status
+  body: json
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "status": "ACTIVE",
+    "reason": "All KYC documents verified successfully"
+  }
+}
+

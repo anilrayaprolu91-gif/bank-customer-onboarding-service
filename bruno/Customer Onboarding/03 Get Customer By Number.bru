@@ -1,0 +1,14 @@
+meta {
+  name: 03 Get Customer By Number
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v1/customers/number/{{customerNumber}}
+}
+
+headers {
+  Accept: application/json
+}
+

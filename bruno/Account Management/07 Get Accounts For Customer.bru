@@ -1,0 +1,14 @@
+meta {
+  name: 07 Get Accounts For Customer
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/v1/customers/{{customerId}}/accounts
+}
+
+headers {
+  Accept: application/json
+}
+

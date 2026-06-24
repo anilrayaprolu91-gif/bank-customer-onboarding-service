@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["success", "message", "data", "timestamp"],
+  "properties": {
+    "success": { "type": "boolean" },
+    "message": { "type": "string" },
+    "timestamp": { "type": ["string", "null"] },
+    "data": {
+      "type": "object",
+      "required": ["id", "accountNumber", "customerId", "accountType", "currency", "balance", "accountStatus"],
+      "properties": {
+        "id": { "type": "string" },
+        "accountNumber": { "type": "string" },
+        "customerId": { "type": "string" },
+        "accountType": { "type": "string" },
+        "currency": { "type": "string" },
+        "balance": { "type": ["number", "integer"] },
+        "accountStatus": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
+

@@ -1,0 +1,325 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'release/**'
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_sonar:
+        description: Run SonarQube analysis
+        type: boolean
+        required: false
+        default: true
+      run_spotbugs:
+        description: Run SpotBugs analysis
+        type: boolean
+        required: false
+        default: true
+      run_docker_push:
+        description: Push Docker image after build
+        type: boolean
+        required: false
+        default: false
+      docker_tag:
+        description: Docker tag override (defaults to run number)
+        required: false
+        type: string
+        default: ""
+      docker_registry:
+        description: Optional registry prefix, e.g. ghcr.io/owner or registry.bank.internal
+        required: false
+        type: string
+        default: ""
+      docker_image:
+        description: Docker image name
+        required: false
+        type: string
+        default: bank-customer-onboarding-service
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.console=plain
+  JAVA_VERSION: '21'
+  DOCKER_IMAGE: ${{ inputs.docker_image || 'bank-customer-onboarding-service' }}
+  DOCKER_TAG: ${{ inputs.docker_tag || github.run_number }}
+  DOCKER_REGISTRY: ${{ inputs.docker_registry || '' }}
+  RUN_SONAR: ${{ inputs.run_sonar || 'true' }}
+  RUN_SPOTBUGS: ${{ inputs.run_spotbugs || 'true' }}
+  RUN_DOCKER_PUSH: ${{ inputs.run_docker_push || 'false' }}
+  REQUIRE_RELEASE_APPROVAL: true
+  SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || '' }}
+  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN || '' }}
+  DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME || '' }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD || '' }}
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Assemble application
+        run: ./gradlew clean assemble -x test --no-daemon
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            build/libs/**
+            build/reports/**
+            build/test-results/**
+          if-no-files-found: ignore
+
+  unit-tests:
+    name: Unit Test
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Run unit tests
+        run: ./gradlew test --no-daemon
+
+      - name: Upload unit test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: |
+            build/reports/tests/test/**
+            build/test-results/test/**
+          if-no-files-found: ignore
+
+  component-tests:
+    name: Component Test
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Run component tests
+        run: ./gradlew componentTest --no-daemon
+
+      - name: Upload component test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: component-test-results
+          path: |
+            build/reports/tests/componentTest/**
+            build/test-results/componentTest/**
+          if-no-files-found: ignore
+
+  blackbox-tests:
+    name: Blackbox Test
+    runs-on: ubuntu-latest
+    needs: build
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Run blackbox tests
+        run: ./gradlew blackboxTest --no-daemon
+
+      - name: Upload blackbox test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: blackbox-test-results
+          path: |
+            build/reports/tests/blackboxTest/**
+            build/test-results/blackboxTest/**
+            build/allure-results/**
+          if-no-files-found: ignore
+
+  sonarqube:
+    name: SonarQube
+    runs-on: ubuntu-latest
+    needs: [unit-tests, component-tests]
+    if: ${{ env.RUN_SONAR == 'true' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/')) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Run SonarQube analysis
+        run: |
+          if [ -z "$SONAR_HOST_URL" ] || [ -z "$SONAR_TOKEN" ]; then
+            echo "SONAR_HOST_URL or SONAR_TOKEN is not configured; skipping SonarQube.";
+            exit 0;
+          fi
+          ./gradlew sonar --no-daemon -Dsonar.host.url="$SONAR_HOST_URL" -Dsonar.token="$SONAR_TOKEN"
+
+  spotbugs:
+    name: SpotBugs
+    runs-on: ubuntu-latest
+    needs: [unit-tests, component-tests]
+    if: ${{ env.RUN_SPOTBUGS == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Run SpotBugs
+        run: ./gradlew spotbugsMain spotbugsTest spotbugsComponentTest spotbugsBlackboxTest --no-daemon
+
+  jacoco:
+    name: Jacoco
+    runs-on: ubuntu-latest
+    needs: [unit-tests, component-tests]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Generate JaCoCo report
+        run: ./gradlew jacocoTestReport --no-daemon
+
+      - name: Upload JaCoCo report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: build/reports/jacoco/**
+          if-no-files-found: ignore
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [unit-tests, component-tests]
+    if: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/')) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute image tag
+        shell: bash
+        run: |
+          if [ -n "$DOCKER_REGISTRY" ]; then
+            EFFECTIVE_DOCKER_IMAGE="$DOCKER_REGISTRY/$DOCKER_IMAGE";
+          else
+            EFFECTIVE_DOCKER_IMAGE="$DOCKER_IMAGE";
+          fi
+          echo "EFFECTIVE_DOCKER_IMAGE_TAG=$EFFECTIVE_DOCKER_IMAGE:$DOCKER_TAG" >> "$GITHUB_ENV"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: ${{ env.EFFECTIVE_DOCKER_IMAGE_TAG }}
+
+  release-approval-gate:
+    name: Release Approval Gate
+    runs-on: ubuntu-latest
+    needs: docker-build
+    if: ${{ env.RUN_DOCKER_PUSH == 'true' && env.REQUIRE_RELEASE_APPROVAL == 'true' && github.event_name != 'pull_request' && startsWith(github.ref, 'refs/heads/release/') }}
+    environment:
+      name: release-push
+    steps:
+      - name: Await protected environment approval
+        run: echo "Approve Docker push for ${{ env.DOCKER_IMAGE }}:${{ env.DOCKER_TAG }}"
+
+  docker-push:
+    name: Docker Push
+    runs-on: ubuntu-latest
+    needs: [unit-tests, component-tests, docker-build]
+    if: ${{ env.RUN_DOCKER_PUSH == 'true' && github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/')) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute image tag
+        shell: bash
+        run: |
+          if [ -n "$DOCKER_REGISTRY" ]; then
+            EFFECTIVE_DOCKER_IMAGE="$DOCKER_REGISTRY/$DOCKER_IMAGE";
+          else
+            EFFECTIVE_DOCKER_IMAGE="$DOCKER_IMAGE";
+          fi
+          echo "EFFECTIVE_DOCKER_IMAGE_TAG=$EFFECTIVE_DOCKER_IMAGE:$DOCKER_TAG" >> "$GITHUB_ENV"
+
+      - name: Log in to Docker registry
+        if: ${{ env.DOCKER_USERNAME != '' && env.DOCKER_PASSWORD != '' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.EFFECTIVE_DOCKER_IMAGE_TAG }}
+

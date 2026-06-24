@@ -1,0 +1,273 @@
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+stages:
+  - checkout
+  - build
+  - test_execution
+  - sonarqube
+  - sonarqube_quality_gate
+  - spotbugs
+  - jacoco
+  - docker_build
+  - release_approval_gate
+  - docker_push
+  - quality_gate_summary
+  - publish_reports
+
+variables:
+  GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.console=plain"
+  POSTGRES_DB: "bank_onboarding"
+  POSTGRES_USER: "bank_user"
+  POSTGRES_PASSWORD: "bank_password"
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/bank_onboarding"
+  SPRING_DATASOURCE_USERNAME: "bank_user"
+  SPRING_DATASOURCE_PASSWORD: "bank_password"
+  DOCKER_IMAGE: "bank-customer-onboarding-service"
+  DOCKER_TAG: "$CI_PIPELINE_IID"
+  DOCKER_REGISTRY: ""
+  RUN_SONAR: "true"
+  RUN_SPOTBUGS: "true"
+  RUN_DOCKER_PUSH: "false"
+  REQUIRE_RELEASE_APPROVAL: "true"
+  RELEASE_APPROVERS: "release-managers,devsecops"
+  SONAR_HOST_URL: ""
+  SONAR_TOKEN: ""
+
+.default_gradle_job:
+  image: eclipse-temurin:21-jdk
+  before_script:
+    - chmod +x gradlew
+  cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - .gradle/wrapper
+      - .gradle/caches
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - build/reports/
+      - build/test-results/
+      - build/allure-results/
+      - build/libs/
+
+checkout:
+  extends: .default_gradle_job
+  stage: checkout
+  script:
+    - echo "Repository checked out by GitLab Runner"
+    - git rev-parse --short HEAD
+
+build:
+  extends: .default_gradle_job
+  stage: build
+  script:
+    - ./gradlew clean assemble -x test --no-daemon
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - build/libs/
+      - build/reports/
+      - build/test-results/
+
+unit_test:
+  extends: .default_gradle_job
+  stage: test_execution
+  script:
+    - ./gradlew test --no-daemon
+  artifacts:
+    when: always
+    expire_in: 7 days
+    reports:
+      junit: build/test-results/test/*.xml
+    paths:
+      - build/reports/tests/test/
+      - build/test-results/test/
+
+component_test:
+  extends: .default_gradle_job
+  stage: test_execution
+  script:
+    - ./gradlew componentTest --no-daemon
+  artifacts:
+    when: always
+    expire_in: 7 days
+    reports:
+      junit: build/test-results/componentTest/*.xml
+    paths:
+      - build/reports/tests/componentTest/
+      - build/test-results/componentTest/
+
+blackbox_test:
+  extends: .default_gradle_job
+  stage: test_execution
+  allow_failure: true
+  script:
+    - ./gradlew blackboxTest --no-daemon
+  artifacts:
+    when: always
+    expire_in: 7 days
+    reports:
+      junit: build/test-results/blackboxTest/*.xml
+    paths:
+      - build/reports/tests/blackboxTest/
+      - build/test-results/blackboxTest/
+      - build/allure-results/
+
+sonarqube:
+  extends: .default_gradle_job
+  stage: sonarqube
+  needs:
+    - unit_test
+    - component_test
+  rules:
+    - if: '$RUN_SONAR == "true" && ($CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH =~ /^release\/.*$/)'
+  script:
+    - |
+      if [ -z "$SONAR_HOST_URL" ] || [ -z "$SONAR_TOKEN" ]; then
+        echo "Skipping SonarQube because SONAR_HOST_URL or SONAR_TOKEN is not set.";
+        exit 0;
+      fi
+    - ./gradlew sonar --no-daemon -Dsonar.host.url="$SONAR_HOST_URL" -Dsonar.token="$SONAR_TOKEN"
+
+sonarqube_quality_gate:
+  extends: .default_gradle_job
+  stage: sonarqube_quality_gate
+  needs:
+    - sonarqube
+  rules:
+    - if: '$RUN_SONAR == "true" && ($CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH =~ /^release\/.*$/)'
+  script:
+    - echo "GitLab does not have a native SonarQube wait step like Jenkins waitForQualityGate in this layout. Use the SonarQube project status or add a separate quality gate integration if required."
+
+spotbugs:
+  extends: .default_gradle_job
+  stage: spotbugs
+  needs:
+    - unit_test
+    - component_test
+  rules:
+    - if: '$RUN_SPOTBUGS == "true"'
+  script:
+    - ./gradlew spotbugsMain spotbugsTest spotbugsComponentTest spotbugsBlackboxTest --no-daemon
+
+jacoco:
+  extends: .default_gradle_job
+  stage: jacoco
+  needs:
+    - unit_test
+    - component_test
+  script:
+    - ./gradlew jacocoTestReport --no-daemon
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - build/reports/jacoco/
+
+.docker_job:
+  image: docker:27
+  services:
+    - name: docker:27-dind
+      command: ["--tls=false"]
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_HOST: "tcp://docker:2375"
+  before_script:
+    - apk add --no-cache bash
+    - |
+      if [ -n "$DOCKER_REGISTRY" ]; then
+        EFFECTIVE_DOCKER_IMAGE="$DOCKER_REGISTRY/$DOCKER_IMAGE";
+      else
+        EFFECTIVE_DOCKER_IMAGE="$DOCKER_IMAGE";
+      fi
+      if [ -n "$DOCKER_TAG" ]; then
+        EFFECTIVE_DOCKER_TAG="$DOCKER_TAG";
+      else
+        EFFECTIVE_DOCKER_TAG="$CI_PIPELINE_IID";
+      fi
+      export EFFECTIVE_DOCKER_IMAGE_TAG="$EFFECTIVE_DOCKER_IMAGE:$EFFECTIVE_DOCKER_TAG"
+      echo "Using image: $EFFECTIVE_DOCKER_IMAGE_TAG"
+
+docker_build:
+  extends: .docker_job
+  stage: docker_build
+  needs:
+    - jacoco
+  rules:
+    - if: '$CI_PIPELINE_SOURCE != "merge_request_event" && ($CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH =~ /^release\/.*$/ || $CI_COMMIT_TAG)'
+  script:
+    - docker build -t "$EFFECTIVE_DOCKER_IMAGE_TAG" .
+  artifacts:
+    when: always
+    expire_in: 7 days
+    paths:
+      - build/libs/
+
+release_approval_gate:
+  extends: .docker_job
+  stage: release_approval_gate
+  needs:
+    - docker_build
+  rules:
+    - if: '$RUN_DOCKER_PUSH == "true" && $REQUIRE_RELEASE_APPROVAL == "true" && $CI_PIPELINE_SOURCE != "merge_request_event" && $CI_COMMIT_BRANCH =~ /^release\/.*$/'
+      when: manual
+      allow_failure: false
+  script:
+    - echo "Approve Docker push for $EFFECTIVE_DOCKER_IMAGE_TAG"
+    - echo "Approvers: $RELEASE_APPROVERS"
+
+docker_push:
+  extends: .docker_job
+  stage: docker_push
+  needs:
+    - docker_build
+  rules:
+    - if: '$RUN_DOCKER_PUSH == "true" && $CI_PIPELINE_SOURCE != "merge_request_event" && ($CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH =~ /^release\/.*$/ || $CI_COMMIT_TAG)'
+  script:
+    - |
+      if [ -n "$DOCKER_USERNAME" ] && [ -n "$DOCKER_PASSWORD" ]; then
+        if [ -n "$DOCKER_REGISTRY" ]; then
+          echo "$DOCKER_PASSWORD" | docker login "$DOCKER_REGISTRY" -u "$DOCKER_USERNAME" --password-stdin;
+        else
+          echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin;
+        fi
+      else
+        echo "Skipping docker login because DOCKER_USERNAME/DOCKER_PASSWORD are not set.";
+      fi
+    - docker push "$EFFECTIVE_DOCKER_IMAGE_TAG"
+  after_script:
+    - |
+      if [ -n "$DOCKER_REGISTRY" ]; then
+        docker logout "$DOCKER_REGISTRY" || true;
+      fi
+
+quality_gate_summary:
+  extends: .default_gradle_job
+  stage: quality_gate_summary
+  needs:
+    - unit_test
+    - component_test
+  script:
+    - echo "Gate flags -> UNIT_TEST_PASSED=true, COMPONENT_TEST_PASSED=true, RUN_SONAR=$RUN_SONAR, RUN_SPOTBUGS=$RUN_SPOTBUGS"
+
+publish_reports:
+  extends: .default_gradle_job
+  stage: publish_reports
+  script:
+    - ./gradlew testLayersReport --no-daemon || true
+  artifacts:
+    when: always
+    expire_in: 14 days
+    paths:
+      - build/reports/**
+      - build/test-results/**
+      - build/allure-results/**
+      - build/libs/*.jar
+

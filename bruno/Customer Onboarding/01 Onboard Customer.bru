@@ -1,0 +1,89 @@
+meta {
+  name: 01 Onboard Customer
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/customers/onboard
+  body: json
+}
+
+script:pre-request {
+  const suffix = Date.now().toString();
+  bru.setEnvVar("email", `jane.smith.${suffix}@example.com`);
+  bru.setEnvVar("taxIdentificationNumber", `987-65-${suffix.slice(-4)}`);
+  bru.setEnvVar("documentNumber", `P${suffix.slice(-8)}`);
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "personalInfo": {
+      "firstName": "Jane",
+      "lastName": "Smith",
+      "dateOfBirth": "1992-04-18",
+      "nationality": "US",
+      "taxIdentificationNumber": "{{taxIdentificationNumber}}",
+      "email": "{{email}}",
+      "phoneNumber": "+15551234567"
+    },
+    "addresses": [
+      {
+        "addressType": "HOME",
+        "street": "789 Elm Street",
+        "city": "Chicago",
+        "state": "IL",
+        "postalCode": "60601",
+        "country": "US",
+        "isPrimary": true
+      }
+    ],
+    "kycDocuments": [
+      {
+        "documentType": "PASSPORT",
+        "documentNumber": "{{documentNumber}}",
+        "issuingAuthority": "U.S. Department of State",
+        "issuingCountry": "US",
+        "issueDate": "2018-01-15",
+        "expiryDate": "2028-01-15"
+      }
+    ],
+    "riskProfile": {
+      "riskLevel": "LOW",
+      "riskScore": 20,
+      "assessedBy": "AUTO_SCREENING_v2.1",
+      "factors": [
+        {
+          "factorName": "GEOGRAPHIC_RISK",
+          "factorDescription": "Standard-risk jurisdiction",
+          "weight": 0.1
+        }
+      ]
+    },
+    "initialAccount": {
+      "accountType": "CHECKING",
+      "currency": "USD",
+      "initialDeposit": 1000.0,
+      "productCode": "CHK-STANDARD"
+    }
+  }
+}
+
+script:post-response {
+  const raw = typeof res.getBody === "function" ? res.getBody() : res.body;
+  const body = typeof raw === "string" ? JSON.parse(raw) : raw;
+
+  if (body?.data?.id) {
+    bru.setEnvVar("customerId", body.data.id);
+  }
+
+  if (body?.data?.customerNumber) {
+    bru.setEnvVar("customerNumber", body.data.customerNumber);
+  }
+}
+

@@ -1,0 +1,14 @@
+meta {
+  name: 08 Get Account By Id
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/api/v1/accounts/{{accountId}}
+}
+
+headers {
+  Accept: application/json
+}
+

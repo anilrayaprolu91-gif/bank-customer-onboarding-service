@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["success", "message", "data", "timestamp"],
+  "properties": {
+    "success": { "type": "boolean" },
+    "message": { "type": "string" },
+    "timestamp": { "type": ["string", "null"] },
+    "data": {
+      "type": "object",
+      "required": ["customerId", "customerNumber", "customerStatus", "totalDocumentsSubmitted", "totalAccounts", "eligibleForServices"],
+      "properties": {
+        "customerId": { "type": "string" },
+        "customerNumber": { "type": "string" },
+        "customerStatus": { "type": "string" },
+        "totalDocumentsSubmitted": { "type": "integer" },
+        "totalAccounts": { "type": "integer" },
+        "eligibleForServices": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
+
