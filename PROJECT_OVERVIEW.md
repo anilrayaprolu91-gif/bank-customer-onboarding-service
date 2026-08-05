@@ -1,4 +1,4 @@
-# Recruiter Demo Guide — Senior Test Automation Engineer
+# PROJECT OVERVIEW
 
 A step-by-step walkthrough to present this framework confidently in a technical interview or live screen share.
 
@@ -22,9 +22,11 @@ Set-Location "D:\bank-customer-onboarding-service"
 
 ## STEP 1 — Set the Context (2 min)
 
-**What to say:**
+**Intent:**
 
-> "This is a production-grade Spring Boot microservice for banking customer onboarding — the same kind of domain you'd find at NAB, ANZ, or CBA. I built it as a full quality engineering showcase, not just a test script collection. The intent was to demonstrate the thinking, architecture, and CI/CD governance expected at Senior level."
+> "This is a Spring Boot microservice for banking customer onboarding — the same kind of domain you'd find at NAB, ANZ, or CBA.
+> I built it as a full quality engineering showcase, not just a test script collection. 
+> The intent was to demonstrate the thinking, architecture, and CI/CD governance expected at Senior level."
 
 **Open in IDE and point to the top-level structure:**
 
