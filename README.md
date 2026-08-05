@@ -1,22 +1,13 @@
 # Bank Customer Onboarding Service
 
-A production-grade Spring Boot banking microservice and enterprise test automation showcase, designed to demonstrate Senior Test Automation Engineering capability for major Australian banking environments.
+A Spring Boot customer onboarding service that includes automated testing across unit, component, API and contract layers, together with CI/CD quality controls and containerized execution.
 
-This project highlights architecture, quality engineering rigor, CI/CD controls, and risk-aware testing practices expected in regulated financial platforms.
+This project highlights architecture, quality engineering, CI/CD controls, and risk-aware testing practices expected in regulated financial platforms.
 
 ---
+## Overview
 
-## Portfolio Positioning
-
-This repository is structured as an interview-ready implementation aligned with delivery standards typically required by institutions such as NAB, ANZ, Westpac, and Commonwealth Bank.
-
-Key outcomes demonstrated:
-
-- enterprise API test framework design (layered and extensible)
-- CI/CD quality controls and branch governance
-- measurable quality gates and report-driven feedback loops
-- maintainable, scalable test architecture patterns
-- production-like automation strategy for banking domains
+This repository contains a Spring Boot customer onboarding service with layered automated testing, contract validation, containerized execution and CI/CD integration.
 
 ---
 
@@ -40,6 +31,19 @@ Key outcomes demonstrated:
 | CI/CD | Jenkins Declarative Pipeline |
 
 ---
+
+## What the System Does
+
+The service provides the following capabilities:
+
+- Customer onboarding via REST APIs
+- Input validation and business rule enforcement
+- Retrieval of customer details by ID
+- Structured API responses for onboarding status
+- Extensible design for downstream banking integrations
+
+---
+
 
 ## Framework Architecture
 
@@ -243,15 +247,33 @@ When the service is running:
 
 ---
 
-## Why This Matters for Banking Delivery
+## Design Considerations
 
-This project demonstrates practical capability across the delivery lifecycle:
+The implementation focuses on:
 
-- robust API quality automation strategy
-- CI governance and approval controls
-- production-aware test stage orchestration
-- maintainable framework design that scales with product complexity
-- traceable quality evidence for release confidence
+- Separation of testing concerns
+- Fast feedback through layered execution
+- Contract compatibility validation
+- Repeatable execution across environments
+- Traceable quality gates in CI/CD
 
-It is intentionally structured to communicate both hands-on engineering depth and quality leadership maturity expected at Senior Test Automation Engineer level.
+These practices help teams identify defects earlier and reduce delivery risk.
 
+---
+
+## Known Limitations
+
+- Authentication is simplified for local execution.
+- Performance testing is not included.
+- Database persistence is currently in-memory.
+- Deployment manifests for Kubernetes are not yet implemented.
+
+---
+
+## Future Enhancements
+
+- Kafka event publishing for onboarding events
+- OpenTelemetry tracing
+- Kubernetes deployment manifests
+- GitHub Actions workflow support
+- Performance testing with k6
