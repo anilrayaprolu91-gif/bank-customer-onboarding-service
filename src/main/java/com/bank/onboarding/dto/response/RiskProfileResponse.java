@@ -1,6 +1,6 @@
 package com.bank.onboarding.dto.response;
 
-import com.bank.onboarding.domain.enums.RiskLevel;
+import com.bank.onboarding.risk.domain.RiskLevel;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -48,4 +48,5 @@ public class RiskProfileResponse {
     @Schema(description = "Record last-updated timestamp")
     private LocalDateTime updatedAt;
 }
+
 

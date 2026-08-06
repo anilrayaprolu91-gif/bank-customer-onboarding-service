@@ -1,6 +1,6 @@
 package com.bank.onboarding.dto.request;
 
-import com.bank.onboarding.domain.enums.AddressType;
+import com.bank.onboarding.customer.domain.AddressType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -44,4 +44,5 @@ public class AddressRequest {
     @NotNull(message = "isPrimary flag is required")
     private Boolean isPrimary;
 }
+
 

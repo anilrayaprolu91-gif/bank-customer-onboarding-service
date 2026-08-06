@@ -1,7 +1,10 @@
 package com.bank.onboarding.mapper;
 
-import com.bank.onboarding.domain.entity.*;
-import com.bank.onboarding.domain.enums.VerificationStatus;
+import com.bank.onboarding.customer.domain.Address;
+import com.bank.onboarding.customer.domain.Customer;
+import com.bank.onboarding.kyc.domain.KycDocument;
+import com.bank.onboarding.risk.domain.RiskFactor;
+import com.bank.onboarding.risk.domain.RiskProfile;
 import com.bank.onboarding.dto.request.*;
 import com.bank.onboarding.dto.response.*;
 import org.mapstruct.*;
@@ -20,14 +23,14 @@ import java.util.List;
 )
 public interface CustomerMapper {
 
-    // ── Customer → CustomerResponse ───────────────────────────────────────────
+    // â”€â”€ Customer â†’ CustomerResponse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Mapping(target = "fullName", expression = "java(customer.getFirstName() + \" \" + customer.getLastName())")
     CustomerResponse toResponse(Customer customer);
 
     List<CustomerResponse> toResponseList(List<Customer> customers);
 
-    // ── Address ───────────────────────────────────────────────────────────────
+    // â”€â”€ Address â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Mapping(target = "id",       ignore = true)
     @Mapping(target = "customer", ignore = true)
@@ -37,7 +40,7 @@ public interface CustomerMapper {
 
     AddressResponse toAddressResponse(Address address);
 
-    // ── KycDocument ───────────────────────────────────────────────────────────
+    // â”€â”€ KycDocument â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Mapping(target = "id",                 ignore = true)
     @Mapping(target = "customer",           ignore = true)
@@ -51,7 +54,7 @@ public interface CustomerMapper {
 
     KycDocumentResponse toKycDocumentResponse(KycDocument document);
 
-    // ── RiskProfile ───────────────────────────────────────────────────────────
+    // â”€â”€ RiskProfile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Mapping(target = "id",           ignore = true)
     @Mapping(target = "customer",     ignore = true)
@@ -64,7 +67,7 @@ public interface CustomerMapper {
 
     RiskProfileResponse toRiskProfileResponse(RiskProfile riskProfile);
 
-    // ── RiskFactor ────────────────────────────────────────────────────────────
+    // â”€â”€ RiskFactor â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Mapping(target = "id",          ignore = true)
     @Mapping(target = "riskProfile", ignore = true)
@@ -73,15 +76,16 @@ public interface CustomerMapper {
 
     RiskFactorResponse toRiskFactorResponse(RiskFactor riskFactor);
 
-    // ── OnboardingStatusResponse ──────────────────────────────────────────────
+    // â”€â”€ OnboardingStatusResponse â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Mapping(target = "customerId",            source = "id")
     @Mapping(target = "totalDocumentsSubmitted", expression = "java(customer.getKycDocuments().size())")
-    @Mapping(target = "verifiedDocuments",     expression = "java((int) customer.getKycDocuments().stream().filter(d -> d.getVerificationStatus() == com.bank.onboarding.domain.enums.VerificationStatus.VERIFIED).count())")
-    @Mapping(target = "pendingDocuments",      expression = "java((int) customer.getKycDocuments().stream().filter(d -> d.getVerificationStatus() == com.bank.onboarding.domain.enums.VerificationStatus.PENDING).count())")
+    @Mapping(target = "verifiedDocuments",     expression = "java((int) customer.getKycDocuments().stream().filter(d -> d.getVerificationStatus() == com.bank.onboarding.kyc.domain.VerificationStatus.VERIFIED).count())")
+    @Mapping(target = "pendingDocuments",      expression = "java((int) customer.getKycDocuments().stream().filter(d -> d.getVerificationStatus() == com.bank.onboarding.kyc.domain.VerificationStatus.PENDING).count())")
     @Mapping(target = "totalAccounts",         expression = "java(customer.getAccounts().size())")
     @Mapping(target = "statusChangedAt",       source = "updatedAt")
-    @Mapping(target = "eligibleForServices",   expression = "java(customer.getCustomerStatus() == com.bank.onboarding.domain.enums.CustomerStatus.ACTIVE)")
+    @Mapping(target = "eligibleForServices",   expression = "java(customer.getCustomerStatus() == com.bank.onboarding.customer.domain.CustomerStatus.ACTIVE)")
     OnboardingStatusResponse toOnboardingStatusResponse(Customer customer);
 }
+
 

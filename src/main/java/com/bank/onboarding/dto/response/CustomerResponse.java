@@ -1,6 +1,6 @@
 package com.bank.onboarding.dto.response;
 
-import com.bank.onboarding.domain.enums.CustomerStatus;
+import com.bank.onboarding.customer.domain.CustomerStatus;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -79,4 +79,5 @@ public class CustomerResponse {
     @Schema(description = "Record last-updated timestamp")
     private LocalDateTime updatedAt;
 }
+
 

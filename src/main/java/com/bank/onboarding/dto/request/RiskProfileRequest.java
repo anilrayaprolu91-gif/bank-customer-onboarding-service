@@ -1,6 +1,6 @@
 package com.bank.onboarding.dto.request;
 
-import com.bank.onboarding.domain.enums.RiskLevel;
+import com.bank.onboarding.risk.domain.RiskLevel;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -39,4 +39,5 @@ public class RiskProfileRequest {
     @Builder.Default
     private List<RiskFactorRequest> factors = new ArrayList<>();
 }
+
 

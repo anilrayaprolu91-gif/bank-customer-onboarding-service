@@ -1,6 +1,6 @@
 package com.bank.onboarding.dto.request;
 
-import com.bank.onboarding.domain.enums.CustomerStatus;
+import com.bank.onboarding.customer.domain.CustomerStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -21,4 +21,5 @@ public class CustomerStatusUpdateRequest {
     @Size(max = 500, message = "Status reason must not exceed 500 characters")
     private String reason;
 }
+
 
