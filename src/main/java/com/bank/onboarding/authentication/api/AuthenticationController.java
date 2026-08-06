@@ -4,7 +4,7 @@ import com.bank.onboarding.authentication.api.dto.LoginRequest;
 import com.bank.onboarding.authentication.api.dto.LoginResponse;
 import com.bank.onboarding.authentication.api.dto.RefreshTokenRequest;
 import com.bank.onboarding.authentication.application.AuthenticationService;
-import com.bank.onboarding.shared.api.ApiResponse;
+import com.bank.onboarding.dto.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
