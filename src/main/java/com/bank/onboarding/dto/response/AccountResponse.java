@@ -1,7 +1,7 @@
 package com.bank.onboarding.dto.response;
 
-import com.bank.onboarding.domain.enums.AccountStatus;
-import com.bank.onboarding.domain.enums.AccountType;
+import com.bank.onboarding.accounts.domain.AccountStatus;
+import com.bank.onboarding.accounts.domain.AccountType;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -57,4 +57,5 @@ public class AccountResponse {
     @Schema(description = "Record last-updated timestamp")
     private LocalDateTime updatedAt;
 }
+
 

@@ -1,6 +1,6 @@
 package com.bank.onboarding.dto.request;
 
-import com.bank.onboarding.domain.enums.AccountType;
+import com.bank.onboarding.accounts.domain.AccountType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import lombok.*;
@@ -33,4 +33,5 @@ public class AccountCreationRequest {
     @Size(max = 20)
     private String productCode;
 }
+
 

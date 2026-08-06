@@ -1,6 +1,6 @@
 package com.bank.onboarding.mapper;
 
-import com.bank.onboarding.domain.entity.Account;
+import com.bank.onboarding.accounts.domain.Account;
 import com.bank.onboarding.dto.request.AccountCreationRequest;
 import com.bank.onboarding.dto.response.AccountResponse;
 import org.mapstruct.*;
@@ -31,4 +31,5 @@ public interface AccountMapper {
 
     List<AccountResponse> toResponseList(List<Account> accounts);
 }
+
 

@@ -1,6 +1,6 @@
 package com.bank.onboarding.dto.request;
 
-import com.bank.onboarding.domain.enums.DocumentType;
+import com.bank.onboarding.kyc.domain.DocumentType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
@@ -44,4 +44,5 @@ public class KycDocumentRequest {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate expiryDate;
 }
+
 

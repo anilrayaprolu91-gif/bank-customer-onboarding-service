@@ -1,7 +1,7 @@
 package com.bank.onboarding.dto.response;
 
-import com.bank.onboarding.domain.enums.DocumentType;
-import com.bank.onboarding.domain.enums.VerificationStatus;
+import com.bank.onboarding.kyc.domain.DocumentType;
+import com.bank.onboarding.kyc.domain.VerificationStatus;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -54,4 +54,5 @@ public class KycDocumentResponse {
     @Schema(description = "Record creation timestamp")
     private LocalDateTime createdAt;
 }
+
 
